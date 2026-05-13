@@ -1,0 +1,255 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #1a1a1a;
+  overscroll-behavior: none;
+}
+
+#root {
+  display: flex;
+  justify-content: center;
+  min-height: 100dvh;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 540px;
+  min-height: 100dvh;
+  padding: 16px 16px 0;
+  font-family: 'Malgun Gothic', sans-serif;
+}
+
+/* 헤더 */
+.header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  flex-shrink: 0;
+}
+
+h1 {
+  color: #f0e6c8;
+  font-size: 1.6rem;
+  letter-spacing: 0.1em;
+}
+
+.ko-label {
+  color: #e05050;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+/* 차례 표시 */
+.turn-indicator {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #f0e6c8;
+  font-size: 0.95rem;
+}
+
+.turn-stone {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #888;
+  flex-shrink: 0;
+}
+
+/* 모드 선택 */
+.mode-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 6px;
+  background: #2a2a2a;
+  color: #888;
+  border: 2px solid #3a3a3a;
+  border-radius: 10px;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.mode-btn.active {
+  border-color: #dcb468;
+  color: #f0e6c8;
+}
+
+.mode-stones {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mode-stone {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.black-stone {
+  background: #1a1a1a;
+  border: 2px solid #555;
+}
+
+.white-stone {
+  background: #f0f0f0;
+  border: 2px solid #aaa;
+}
+
+.mode-arrow {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.mode-label {
+  font-size: 0.8rem;
+}
+
+/* 놓아보기 배너 */
+.preview-banner {
+  width: 100%;
+  padding: 7px 12px;
+  background: #2a1f00;
+  border: 1px solid #dcb468;
+  border-radius: 8px;
+  color: #dcb468;
+  font-size: 0.88rem;
+  text-align: center;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+/* 바둑판 */
+.board-container {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+/* 하단 */
+.footer {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 12px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
+}
+
+.nav-row {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-btn {
+  flex: 1;
+  padding: 16px 0;
+  background: #2a2a2a;
+  color: #f0e6c8;
+  border: 2px solid #3a3a3a;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+
+.nav-btn:disabled {
+  color: #555;
+  cursor: default;
+}
+
+.nav-btn:not(:disabled):active {
+  background: #3a3a3a;
+}
+
+.bottom-row {
+  display: flex;
+  gap: 10px;
+}
+
+.preview-btn {
+  flex: 1;
+  padding: 18px 0;
+  background: #1a3a2a;
+  color: #7ecfa0;
+  border: 2px solid #2a5a3a;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+
+.preview-btn:active {
+  background: #2a5a3a;
+}
+
+.exit-preview-btn {
+  width: 100%;
+  padding: 18px 0;
+  background: #3a2800;
+  color: #dcb468;
+  border: 2px solid #dcb468;
+  border-radius: 12px;
+  font-size: 1.15rem;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+
+.exit-preview-btn:active {
+  background: #5a4400;
+}
+
+.reset-btn {
+  flex: 1;
+  padding: 18px 0;
+  background: #5a3e1b;
+  color: #f0e6c8;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+
+.reset-btn:active {
+  background: #7a5e3b;
+}

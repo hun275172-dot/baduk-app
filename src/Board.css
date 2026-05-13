@@ -1,0 +1,13 @@
+.board {
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.cell {
+  cursor: pointer;
+}
+
+.cell:hover circle {
+  filter: brightness(1.15);
+}
