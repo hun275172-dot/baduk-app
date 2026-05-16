@@ -151,6 +151,23 @@ h1 {
   flex-shrink: 0;
 }
 
+/* 트리 뷰 */
+.tree-wrapper {
+  width: 100%;
+  max-height: 160px;
+  overflow: auto;
+  background: #111;
+  border-radius: 8px;
+  border: 1px solid #2a2a2a;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tree-toggle-btn.active {
+  border-color: #dcb468;
+  color: #dcb468;
+}
+
 /* 하단 */
 .footer {
   width: 100%;
@@ -235,6 +252,30 @@ h1 {
   background: #5a4400;
 }
 
+.delete-btn {
+  flex: 1;
+  padding: 18px 0;
+  background: #2a1515;
+  color: #e05050;
+  border: 1.5px solid #4a2020;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+
+.delete-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.delete-btn:not(:disabled):active {
+  background: #4a2020;
+}
+
 .reset-btn {
   flex: 1;
   padding: 18px 0;
@@ -252,4 +293,79 @@ h1 {
 
 .reset-btn:active {
   background: #7a5e3b;
+}
+
+/* 확인 모달 */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: #242424;
+  border: 1px solid #3a3a3a;
+  border-radius: 14px;
+  padding: 28px 24px 20px;
+  width: min(80vw, 280px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.modal-msg {
+  color: #f0e6c8;
+  font-size: 1.05rem;
+  text-align: center;
+}
+
+.modal-btns {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 14px 0;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.modal-yes {
+  background: #5a3e1b;
+  color: #f0e6c8;
+}
+
+.modal-yes:active {
+  background: #7a5e3b;
+}
+
+.modal-danger {
+  background: #5a1515;
+  color: #f0c8c8;
+}
+
+.modal-danger:active {
+  background: #7a2020;
+}
+
+.modal-no {
+  background: #2a2a2a;
+  color: #aaa;
+  border: 1px solid #3a3a3a;
+}
+
+.modal-no:active {
+  background: #3a3a3a;
 }
