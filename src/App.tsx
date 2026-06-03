@@ -1,6 +1,9 @@
 import { useState, useRef, useMemo } from 'react'
 import Board from './Board'
 import TreeView from './TreeView'
+import Gallery from './Gallery'
+import FolderPicker from './FolderPicker'
+import { saveProblem, type SavedProblem, type Folder } from './db'
 import './App.css'
 
 export type Stone = 'black' | 'white' | null
@@ -99,6 +102,12 @@ export default function App() {
   const [showTree, setShowTree] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showFolderPicker, setShowFolderPicker] = useState(false)
+  const [folderPickerMode, setFolderPickerMode] = useState<'save' | 'gallery'>('save')
+  const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null)
+  const [showGallery, setShowGallery] = useState(false)
+  const [isSetupPhase, setIsSetupPhase] = useState(true)
+  const [setupColor, setSetupColor] = useState<'black' | 'white'>('black')
   const idRef = useRef(0)
 
   function newId() { return `n${++idRef.current}` }
@@ -132,6 +141,17 @@ export default function App() {
   }, [previewMode, previewStartId, currentId, nodes])
 
   function handlePlace(row: number, col: number) {
+    if (isSetupPhase) {
+      const color = setupColor
+      setNodes(prev => {
+        const root = prev[ROOT_ID]
+        const newBoard = root.state.board.map(r => [...r]) as Stone[][]
+        newBoard[row][col] = newBoard[row][col] === color ? null : color
+        return { ...prev, [ROOT_ID]: { ...root, state: { ...root.state, board: newBoard } } }
+      })
+      return
+    }
+
     if (board[row][col] !== null) return
     if (koPoint && koPoint.row === row && koPoint.col === col) return
 
@@ -210,12 +230,31 @@ export default function App() {
     setCurrentId(currentNode.childIds[0])
   }
 
+  function handleCompleteSetup() {
+    setIsSetupPhase(false)
+    // currentTurn을 선택된 모드에 맞게 정렬
+    const firstTurn: 'black' | 'white' = mode === 'alt-white' || mode === 'white-only' ? 'white' : 'black'
+    setNodes(prev => ({
+      ...prev,
+      [ROOT_ID]: { ...prev[ROOT_ID], state: { ...prev[ROOT_ID].state, currentTurn: firstTurn } },
+    }))
+  }
+
   function handleReset() {
-    setNodes({ [ROOT_ID]: makeRootNode(mode) })
-    setCurrentId(ROOT_ID)
-    setPreviewMode(false)
-    setPreviewStartId(ROOT_ID)
-    setPreviewOriginalChildIds([])
+    if (isSetupPhase) {
+      // 초기 배치 초기화: 빈 board로
+      setNodes({ [ROOT_ID]: makeRootNode(mode) })
+      setCurrentId(ROOT_ID)
+    } else {
+      // 새 문제: 모든 것을 초기화하고 문제 만들기 모드로 돌아가기
+      setNodes({ [ROOT_ID]: makeRootNode(mode) })
+      setCurrentId(ROOT_ID)
+      setPreviewMode(false)
+      setPreviewStartId(ROOT_ID)
+      setPreviewOriginalChildIds([])
+      setIsSetupPhase(true)
+      setSetupColor('black')
+    }
   }
 
   function handleEnterPreview() {
@@ -278,48 +317,157 @@ export default function App() {
     setCurrentId(id)
   }
 
+  // 현재 board 상태를 canvas로 그려 PNG data URL 반환
+  function captureThumbnail(): string {
+    const THUMB_CELL = 17
+    const THUMB_PAD  = 13
+    const canvasSize = THUMB_CELL * (SIZE - 1) + THUMB_PAD * 2
+    const canvas = document.createElement('canvas')
+    canvas.width  = canvasSize
+    canvas.height = canvasSize
+    const ctx = canvas.getContext('2d')!
+
+    ctx.fillStyle = '#dcb468'
+    ctx.fillRect(0, 0, canvasSize, canvasSize)
+
+    ctx.strokeStyle = '#5a3e1b'
+    ctx.lineWidth   = 0.7
+    for (let i = 0; i < SIZE; i++) {
+      ctx.beginPath(); ctx.moveTo(THUMB_PAD + i * THUMB_CELL, THUMB_PAD)
+      ctx.lineTo(THUMB_PAD + i * THUMB_CELL, THUMB_PAD + (SIZE - 1) * THUMB_CELL); ctx.stroke()
+      ctx.beginPath(); ctx.moveTo(THUMB_PAD, THUMB_PAD + i * THUMB_CELL)
+      ctx.lineTo(THUMB_PAD + (SIZE - 1) * THUMB_CELL, THUMB_PAD + i * THUMB_CELL); ctx.stroke()
+    }
+
+    ctx.fillStyle = '#5a3e1b'
+    for (const [r, c] of [[2,2],[2,6],[4,4],[6,2],[6,6]]) {
+      ctx.beginPath()
+      ctx.arc(THUMB_PAD + c * THUMB_CELL, THUMB_PAD + r * THUMB_CELL, 2, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const stone = board[r][c]
+        if (!stone) continue
+        const x = THUMB_PAD + c * THUMB_CELL
+        const y = THUMB_PAD + r * THUMB_CELL
+        ctx.beginPath()
+        ctx.arc(x, y, THUMB_CELL / 2 - 1, 0, Math.PI * 2)
+        ctx.fillStyle   = stone === 'black' ? '#1a1a1a' : '#f0f0f0'
+        ctx.strokeStyle = stone === 'black' ? '#000' : '#ccc'
+        ctx.lineWidth   = 0.5
+        ctx.fill(); ctx.stroke()
+      }
+    }
+
+    return canvas.toDataURL('image/png')
+  }
+
+  async function handleSave(folder: Folder) {
+    const thumbnail = captureThumbnail()
+    await saveProblem({
+      folderId: folder.id!,
+      title: '',
+      date: new Date().toLocaleDateString('ko-KR'),
+      thumbnail,
+      nodes: nodes as Record<string, unknown>,
+      rootId: ROOT_ID,
+      currentId,
+      mode,
+    })
+  }
+
+  function handleFolderSelect(folder: Folder) {
+    setSelectedFolder(folder)
+    setShowFolderPicker(false)
+    if (folderPickerMode === 'save') {
+      handleSave(folder)
+    } else {
+      setShowGallery(true)
+    }
+  }
+
+  function handleLoad(problem: SavedProblem) {
+    setNodes(problem.nodes as Record<string, TreeNode>)
+    setCurrentId(problem.currentId)
+    setMode(problem.mode as PlacementMode)
+    setPreviewMode(false)
+    setPreviewStartId(ROOT_ID)
+    setPreviewOriginalChildIds([])
+    setIsSetupPhase(false)
+    const maxN = Object.keys(problem.nodes)
+      .map(id => parseInt(id.replace('n', '')) || 0)
+      .reduce((a, b) => Math.max(a, b), 0)
+    idRef.current = maxN
+    setShowGallery(false)
+  }
+
   return (
     <div className="app">
       <header className="header">
         <h1>바둑</h1>
-        <div className="turn-indicator">
-          <span
-            className="turn-stone"
-            style={{ background: effectiveColor === 'black' ? '#1a1a1a' : '#f0f0f0' }}
-          />
-          <span>{effectiveColor === 'black' ? '흑' : '백'} 차례</span>
-          {koPoint && <span className="ko-label">패</span>}
-        </div>
+        {isSetupPhase ? (
+          <div className="turn-indicator">
+            <span className="turn-stone" style={{ background: setupColor === 'black' ? '#1a1a1a' : '#f0f0f0' }} />
+            <span>초기 배치</span>
+          </div>
+        ) : (
+          <div className="turn-indicator">
+            <span className="turn-stone" style={{ background: effectiveColor === 'black' ? '#1a1a1a' : '#f0f0f0' }} />
+            <span>{effectiveColor === 'black' ? '흑' : '백'} 차례</span>
+            {koPoint && <span className="ko-label">패</span>}
+          </div>
+        )}
       </header>
 
-      <div className="mode-picker">
-        {MODES.map(({ id, label, stones }) => (
+      {isSetupPhase ? (
+        <div className="setup-color-picker">
           <button
-            key={id}
-            className={`mode-btn${mode === id ? ' active' : ''}`}
-            onClick={() => handleModeChange(id)}
+            className={`setup-color-btn${setupColor === 'black' ? ' active' : ''}`}
+            onClick={() => setSetupColor('black')}
           >
-            <span className="mode-stones">
-              <span className={`mode-stone ${stones[0]}-stone`} />
-              <span className="mode-arrow">→</span>
-              <span className={`mode-stone ${stones[1]}-stone`} />
-            </span>
-            <span className="mode-label">{label}</span>
+            <span className="mode-stone black-stone" />
+            <span className="setup-color-label">흑돌</span>
           </button>
-        ))}
-      </div>
-
-      {previewMode && (
-        <div className="preview-banner">
-          놓아보기 중 · {previewMarks.length}수
+          <button
+            className={`setup-color-btn${setupColor === 'white' ? ' active' : ''}`}
+            onClick={() => setSetupColor('white')}
+          >
+            <span className="mode-stone white-stone" />
+            <span className="setup-color-label">백돌</span>
+          </button>
+        </div>
+      ) : (
+        <div className="mode-picker">
+          {MODES.map(({ id, label, stones }) => (
+            <button
+              key={id}
+              className={`mode-btn${mode === id ? ' active' : ''}`}
+              onClick={() => handleModeChange(id)}
+              title={label}
+            >
+              <span className="mode-stones">
+                <span className={`mode-stone ${stones[0]}-stone`} />
+                <span className="mode-arrow">→</span>
+                <span className={`mode-stone ${stones[1]}-stone`} />
+              </span>
+            </button>
+          ))}
         </div>
       )}
 
+      {isSetupPhase ? (
+        <div className="setup-banner">문제 만들기 중 · 돌을 탭해 배치/제거</div>
+      ) : previewMode ? (
+        <div className="preview-banner">놓아보기 중 · {previewMarks.length}수</div>
+      ) : null}
+
       <div className="board-container">
-        <Board board={board} onPlace={handlePlace} koPoint={koPoint} previewMarks={previewMarks} />
+        <Board board={board} onPlace={handlePlace} koPoint={isSetupPhase ? null : koPoint} previewMarks={previewMarks} />
       </div>
 
-      {showTree && (
+      {!isSetupPhase && showTree && (
         <div className="tree-wrapper">
           <TreeView
             nodes={nodes}
@@ -332,24 +480,39 @@ export default function App() {
       )}
 
       <footer className="footer">
-        <div className="nav-row">
-          <button className="nav-btn" onClick={handleUndo} disabled={!canUndo}>◀ 되돌리기</button>
-          <button className="nav-btn" onClick={handleRedo} disabled={!canRedo}>앞으로 ▶</button>
-          <button
-            className={`nav-btn tree-toggle-btn${showTree ? ' active' : ''}`}
-            onClick={() => setShowTree(v => !v)}
-          >
-            트리
-          </button>
-        </div>
-        {previewMode ? (
-          <button className="exit-preview-btn" onClick={handleExitPreview}>돌아가기</button>
-        ) : (
-          <div className="bottom-row">
-            <button className="preview-btn" onClick={handleEnterPreview}>놓아보기</button>
-            <button className="delete-btn" onClick={() => setShowDeleteConfirm(true)} disabled={currentId === ROOT_ID}>삭제</button>
+        {isSetupPhase ? (
+          <div className="setup-actions">
+            <button className="complete-setup-btn" onClick={handleCompleteSetup}>문제 만들기 완료</button>
             <button className="reset-btn" onClick={() => setShowResetConfirm(true)}>초기화</button>
           </div>
+        ) : (
+          <>
+            <div className="nav-row">
+              <button className="nav-btn" onClick={handleUndo} disabled={!canUndo}>◀ 되돌리기</button>
+              <button className="nav-btn" onClick={handleRedo} disabled={!canRedo}>앞으로 ▶</button>
+              <button
+                className={`nav-btn tree-toggle-btn${showTree ? ' active' : ''}`}
+                onClick={() => setShowTree(v => !v)}
+              >
+                트리
+              </button>
+            </div>
+            {previewMode ? (
+              <button className="exit-preview-btn" onClick={handleExitPreview}>돌아가기</button>
+            ) : (
+              <>
+                <div className="bottom-row">
+                  <button className="preview-btn" onClick={handleEnterPreview}>놓아보기</button>
+                  <button className="delete-btn" onClick={() => setShowDeleteConfirm(true)} disabled={currentId === ROOT_ID}>삭제</button>
+                  <button className="reset-btn" onClick={() => setShowResetConfirm(true)}>새 문제</button>
+                </div>
+                <div className="save-row">
+                  <button className="save-btn" onClick={() => { setFolderPickerMode('save'); setShowFolderPicker(true) }}>문제 저장</button>
+                  <button className="gallery-btn" onClick={() => { setFolderPickerMode('gallery'); setShowFolderPicker(true) }}>갤러리</button>
+                </div>
+              </>
+            )}
+          </>
         )}
       </footer>
 
@@ -368,13 +531,22 @@ export default function App() {
       {showResetConfirm && (
         <div className="modal-overlay" onClick={() => setShowResetConfirm(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <p className="modal-msg">초기화하시겠습니까?</p>
+            <p className="modal-msg">{isSetupPhase ? '초기 배치를 초기화하시겠습니까?' : <>현재 문제를 버리고<br />새 문제를 만드시겠습니까?</>}</p>
             <div className="modal-btns">
               <button className="modal-btn modal-yes" onClick={() => { handleReset(); setShowResetConfirm(false) }}>예</button>
               <button className="modal-btn modal-no"  onClick={() => setShowResetConfirm(false)}>아니오</button>
             </div>
           </div>
         </div>
+      )}
+
+
+      {showFolderPicker && (
+        <FolderPicker onSelect={handleFolderSelect} onClose={() => setShowFolderPicker(false)} />
+      )}
+
+      {showGallery && selectedFolder && (
+        <Gallery folder={selectedFolder} onLoad={handleLoad} onClose={() => setShowGallery(false)} />
       )}
     </div>
   )

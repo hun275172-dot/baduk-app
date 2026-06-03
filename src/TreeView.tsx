@@ -50,23 +50,32 @@ interface Props {
 }
 
 export default function TreeView({ nodes, rootId, currentId, previewStartId, onNavigate }: Props) {
+  const rootKids = nodes[rootId]?.childIds ?? []
+
+  if (rootKids.length === 0) {
+    return <div className="tree-empty-msg">아직 수순이 없습니다</div>
+  }
+
   const pos = computeLayout(nodes, rootId)
-  const allIds = Object.keys(pos)
+
+  // 루트는 레이아웃에서 x=0이지만 렌더링에서 제외하고, 자식(x=1~)을 -1 시프트해서 표시
+  const allIds = Object.keys(pos).filter(id => id !== rootId)
 
   const maxX = allIds.reduce((m, id) => Math.max(m, pos[id].x), 0)
   const maxY = allIds.reduce((m, id) => Math.max(m, pos[id].y), 0)
 
-  const svgW = (maxX + 1) * COL_W + MARGIN * 2
+  const svgW = maxX * COL_W + MARGIN * 2
   const svgH = (maxY + 1) * ROW_H + MARGIN * 2
 
-  const ncx = (id: string) => MARGIN + pos[id].x * COL_W
+  // x를 -1 시프트: 루트의 자식(x=1)이 시각적 x=0에 오도록
+  const ncx = (id: string) => MARGIN + (pos[id].x - 1) * COL_W
   const ncy = (id: string) => MARGIN + pos[id].y * ROW_H
 
   const currentPath = buildCurrentPath(nodes, currentId)
 
   return (
     <svg width={svgW} height={svgH} style={{ display: 'block' }}>
-      {/* 연결선 */}
+      {/* 연결선 (루트→자식 연결은 루트가 렌더링되지 않으므로 자동으로 제외) */}
       {allIds.flatMap(id =>
         (nodes[id]?.childIds ?? []).map(childId => {
           const px = ncx(id), py = ncy(id)
@@ -88,7 +97,7 @@ export default function TreeView({ nodes, rootId, currentId, previewStartId, onN
         })
       )}
 
-      {/* 노드 */}
+      {/* 노드 (루트 제외) */}
       {allIds.map(id => {
         const node = nodes[id]
         const x = ncx(id), y = ncy(id)

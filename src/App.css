@@ -68,8 +68,7 @@ h1 {
 
 /* 모드 선택 */
 .mode-picker {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 8px;
   width: 100%;
   margin-bottom: 10px;
@@ -77,11 +76,11 @@ h1 {
 }
 
 .mode-btn {
+  flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 10px 6px;
+  justify-content: center;
+  padding: 10px 4px;
   background: #2a2a2a;
   color: #888;
   border: 2px solid #3a3a3a;
@@ -131,6 +130,84 @@ h1 {
   font-size: 0.8rem;
 }
 
+/* 초기 배치 컬러 피커 */
+.setup-color-picker {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.setup-color-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 8px;
+  background: #2a2a2a;
+  border: 2px solid #3a3a3a;
+  border-radius: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s;
+}
+
+.setup-color-btn.active {
+  border-color: #dcb468;
+}
+
+.setup-color-label {
+  color: #ccc;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.setup-color-btn.active .setup-color-label {
+  color: #f0e6c8;
+}
+
+/* 초기 배치 배너 */
+.setup-banner {
+  width: 100%;
+  padding: 7px 12px;
+  background: #1a2a1a;
+  border: 1px solid #4a7a4a;
+  border-radius: 8px;
+  color: #7ecfa0;
+  font-size: 0.88rem;
+  text-align: center;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+/* 초기 배치 완료 버튼 영역 */
+.setup-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.complete-setup-btn {
+  flex: 1;
+  padding: 15px;
+  background: #1a3a1a;
+  color: #7ecfa0;
+  border: 1.5px solid #4a7a4a;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.complete-setup-btn:active {
+  background: #2a5a2a;
+}
+
 /* 놓아보기 배너 */
 .preview-banner {
   width: 100%;
@@ -161,6 +238,13 @@ h1 {
   border: 1px solid #2a2a2a;
   flex-shrink: 0;
   -webkit-overflow-scrolling: touch;
+}
+
+.tree-empty-msg {
+  color: #444;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 20px;
 }
 
 .tree-toggle-btn.active {
@@ -293,6 +377,67 @@ h1 {
 
 .reset-btn:active {
   background: #7a5e3b;
+}
+
+/* 저장 / 갤러리 버튼 */
+.save-row {
+  display: flex;
+  gap: 10px;
+}
+
+.save-btn {
+  flex: 1;
+  padding: 15px 0;
+  background: #1a2a3a;
+  color: #7ab8e8;
+  border: 1.5px solid #2a4a6a;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+
+.save-btn:active {
+  background: #2a4a6a;
+}
+
+.gallery-btn {
+  flex: 1;
+  padding: 15px 0;
+  background: #1a2a1a;
+  color: #7ecfa0;
+  border: 1.5px solid #2a4a2a;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+
+.gallery-btn:active {
+  background: #2a4a2a;
+}
+
+/* 저장 제목 입력 */
+.save-input {
+  width: 100%;
+  padding: 12px;
+  background: #1a1a1a;
+  color: #f0e6c8;
+  border: 1.5px solid #3a3a3a;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.save-input:focus {
+  border-color: #dcb468;
 }
 
 /* 확인 모달 */
