@@ -435,10 +435,15 @@ export default function App() {
           </div>
         )}
         {isSetupPhase ? (
-          <div className="setup-actions">
-            <button className="complete-setup-btn" onClick={handleCompleteSetup}>문제 만들기 완료</button>
-            <button className="reset-btn" onClick={() => setShowResetConfirm(true)}>초기화</button>
-          </div>
+          <>
+            <div className="setup-actions">
+              <button className="complete-setup-btn" onClick={handleCompleteSetup}>문제 만들기 완료</button>
+              <button className="reset-btn" onClick={() => setShowResetConfirm(true)}>초기화</button>
+            </div>
+            <div className="save-row">
+              <button className="gallery-btn" onClick={() => { setFolderPickerMode('gallery'); setShowFolderPicker(true) }}>갤러리</button>
+            </div>
+          </>
         ) : (
           <>
             <div className="nav-row">
