@@ -96,9 +96,6 @@ export default function App() {
     [ROOT_ID]: makeRootNode('alt-black'),
   })
   const [currentId, setCurrentId] = useState(ROOT_ID)
-  const [previewMode, setPreviewMode] = useState(false)
-  const [previewStartId, setPreviewStartId] = useState(ROOT_ID)
-  const [previewOriginalChildIds, setPreviewOriginalChildIds] = useState<string[]>([])
   const [showTree, setShowTree] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -115,7 +112,7 @@ export default function App() {
   const currentNode = nodes[currentId]
   const { board, currentTurn, koPoint } = currentNode.state
 
-  const canUndo = previewMode ? currentId !== previewStartId : currentNode.parentId !== null
+  const canUndo = currentNode.parentId !== null
   const canRedo = currentNode.childIds.length > 0
 
   const effectiveColor: 'black' | 'white' =
@@ -123,14 +120,14 @@ export default function App() {
     mode === 'white-only' ? 'white' :
     currentTurn
 
-  const previewMarks = useMemo<PreviewMark[]>(() => {
-    if (!previewMode) return []
+  // 풀기 모드에서 루트→현재 노드 경로의 수순 번호 표시
+  const solveMarks = useMemo<PreviewMark[]>(() => {
+    if (isSetupPhase) return []
     const path: string[] = []
     let id = currentId
-    // 현재 노드에서 previewStartId까지 올라가며 경로 수집
-    while (id !== previewStartId) {
+    while (id !== ROOT_ID) {
       const parent = nodes[id]?.parentId
-      if (!parent) return []  // previewStartId까지 닿지 못한 경우
+      if (!parent) break
       path.unshift(id)
       id = parent
     }
@@ -138,7 +135,7 @@ export default function App() {
       const m = nodes[nodeId]?.move
       return m ? [{ row: m.row, col: m.col, num: i + 1 }] : []
     })
-  }, [previewMode, previewStartId, currentId, nodes])
+  }, [isSetupPhase, currentId, nodes])
 
   function handlePlace(row: number, col: number) {
     if (isSetupPhase) {
@@ -249,43 +246,9 @@ export default function App() {
       // 새 문제: 모든 것을 초기화하고 문제 만들기 모드로 돌아가기
       setNodes({ [ROOT_ID]: makeRootNode(mode) })
       setCurrentId(ROOT_ID)
-      setPreviewMode(false)
-      setPreviewStartId(ROOT_ID)
-      setPreviewOriginalChildIds([])
       setIsSetupPhase(true)
       setSetupColor('black')
     }
-  }
-
-  function handleEnterPreview() {
-    setPreviewMode(true)
-    setPreviewStartId(currentId)
-    setPreviewOriginalChildIds(currentNode.childIds)
-  }
-
-  function handleExitPreview() {
-    // previewStartId의 새 자식들(놓아보기 중 추가된 것)과 그 하위를 모두 제거
-    const toRemove = new Set<string>()
-    function collectDescendants(id: string) {
-      toRemove.add(id)
-      for (const cid of nodes[id]?.childIds ?? []) collectDescendants(cid)
-    }
-    const newChildren = nodes[previewStartId].childIds.filter(
-      cid => !previewOriginalChildIds.includes(cid)
-    )
-    newChildren.forEach(collectDescendants)
-
-    setNodes(prev => {
-      const updated = { ...prev }
-      for (const id of toRemove) delete updated[id]
-      updated[previewStartId] = {
-        ...updated[previewStartId],
-        childIds: previewOriginalChildIds,
-      }
-      return updated
-    })
-    setCurrentId(previewStartId)
-    setPreviewMode(false)
   }
 
   function handleDelete() {
@@ -298,8 +261,6 @@ export default function App() {
       for (const cid of nodes[id]?.childIds ?? []) collect(cid)
     }
     collect(currentId)
-
-    if (previewMode && toRemove.has(previewStartId)) setPreviewMode(false)
 
     setNodes(prev => {
       const updated = { ...prev }
@@ -392,9 +353,6 @@ export default function App() {
     setNodes(problem.nodes as Record<string, TreeNode>)
     setCurrentId(problem.currentId)
     setMode(problem.mode as PlacementMode)
-    setPreviewMode(false)
-    setPreviewStartId(ROOT_ID)
-    setPreviewOriginalChildIds([])
     setIsSetupPhase(false)
     const maxN = Object.keys(problem.nodes)
       .map(id => parseInt(id.replace('n', '')) || 0)
@@ -457,29 +415,25 @@ export default function App() {
         </div>
       )}
 
-      {isSetupPhase ? (
+      {isSetupPhase && (
         <div className="setup-banner">문제 만들기 중 · 돌을 탭해 배치/제거</div>
-      ) : previewMode ? (
-        <div className="preview-banner">놓아보기 중 · {previewMarks.length}수</div>
-      ) : null}
-
-      <div className="board-container">
-        <Board board={board} onPlace={handlePlace} koPoint={isSetupPhase ? null : koPoint} previewMarks={previewMarks} />
-      </div>
-
-      {!isSetupPhase && showTree && (
-        <div className="tree-wrapper">
-          <TreeView
-            nodes={nodes}
-            rootId={ROOT_ID}
-            currentId={currentId}
-            previewStartId={previewMode ? previewStartId : undefined}
-            onNavigate={handleNavigate}
-          />
-        </div>
       )}
 
+      <div className="board-container">
+        <Board board={board} onPlace={handlePlace} koPoint={isSetupPhase ? null : koPoint} previewMarks={solveMarks} />
+      </div>
+
       <footer className="footer">
+        {!isSetupPhase && showTree && (
+          <div className="tree-wrapper">
+            <TreeView
+              nodes={nodes}
+              rootId={ROOT_ID}
+              currentId={currentId}
+              onNavigate={handleNavigate}
+            />
+          </div>
+        )}
         {isSetupPhase ? (
           <div className="setup-actions">
             <button className="complete-setup-btn" onClick={handleCompleteSetup}>문제 만들기 완료</button>
@@ -497,21 +451,14 @@ export default function App() {
                 트리
               </button>
             </div>
-            {previewMode ? (
-              <button className="exit-preview-btn" onClick={handleExitPreview}>돌아가기</button>
-            ) : (
-              <>
-                <div className="bottom-row">
-                  <button className="preview-btn" onClick={handleEnterPreview}>놓아보기</button>
-                  <button className="delete-btn" onClick={() => setShowDeleteConfirm(true)} disabled={currentId === ROOT_ID}>삭제</button>
-                  <button className="reset-btn" onClick={() => setShowResetConfirm(true)}>새 문제</button>
-                </div>
-                <div className="save-row">
-                  <button className="save-btn" onClick={() => { setFolderPickerMode('save'); setShowFolderPicker(true) }}>문제 저장</button>
-                  <button className="gallery-btn" onClick={() => { setFolderPickerMode('gallery'); setShowFolderPicker(true) }}>갤러리</button>
-                </div>
-              </>
-            )}
+            <div className="bottom-row">
+              <button className="delete-btn" onClick={() => setShowDeleteConfirm(true)} disabled={currentId === ROOT_ID}>삭제</button>
+              <button className="reset-btn" onClick={() => setShowResetConfirm(true)}>새 문제</button>
+            </div>
+            <div className="save-row">
+              <button className="save-btn" onClick={() => { setFolderPickerMode('save'); setShowFolderPicker(true) }}>문제 저장</button>
+              <button className="gallery-btn" onClick={() => { setFolderPickerMode('gallery'); setShowFolderPicker(true) }}>갤러리</button>
+            </div>
           </>
         )}
       </footer>

@@ -45,11 +45,10 @@ interface Props {
   nodes: Record<string, TreeNode>
   rootId: string
   currentId: string
-  previewStartId?: string
   onNavigate: (id: string) => void
 }
 
-export default function TreeView({ nodes, rootId, currentId, previewStartId, onNavigate }: Props) {
+export default function TreeView({ nodes, rootId, currentId, onNavigate }: Props) {
   const rootKids = nodes[rootId]?.childIds ?? []
 
   if (rootKids.length === 0) {
@@ -102,19 +101,14 @@ export default function TreeView({ nodes, rootId, currentId, previewStartId, onN
         const node = nodes[id]
         const x = ncx(id), y = ncy(id)
         const isCurrent = id === currentId
-        const isPreviewStart = id === previewStartId
         const onPath = currentPath.has(id)
 
         const fill = !node.move
           ? '#3a3a3a'
           : node.move.color === 'black' ? '#1a1a1a' : '#efefef'
 
-        const stroke =
-          isCurrent      ? '#dcb468' :
-          isPreviewStart ? '#7ecfa0' :
-          onPath         ? '#888'    : '#444'
-
-        const strokeW = isCurrent ? 2.5 : isPreviewStart ? 2 : 1
+        const stroke = isCurrent ? '#dcb468' : onPath ? '#888' : '#444'
+        const strokeW = isCurrent ? 2.5 : 1
 
         return (
           <g key={id} onClick={() => onNavigate(id)} style={{ cursor: 'pointer' }}>
